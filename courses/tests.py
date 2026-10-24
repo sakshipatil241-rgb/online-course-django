@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.contrib import admin
 from django.test import TestCase
 from django.urls import reverse
 
+from . import admin as course_admin
 from .exam_data import EXAM_QUESTIONS
-from .models import Choice, Course, Enrollment, Instructor, Lesson, Question, Submission
+from .models import Choice, Course, Enrollment, Instructor, Learner, Lesson, Question, Submission
 
 
 class CourseModelTests(TestCase):
@@ -102,6 +104,11 @@ class ExamModelTests(TestCase):
 
         self.assertEqual(str(submission), 'exam_student - Exam Course')
 
+    def test_learner_string_representation(self):
+        learner = Learner.objects.create(user=self.user)
+
+        self.assertEqual(str(learner), 'exam_student')
+
 
 class MockExamTests(TestCase):
     def test_exam_urls_are_registered(self):
@@ -135,3 +142,20 @@ class MockExamTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'courses/mock_exam.html')
         self.assertNotIn('mock_exam_result', self.client.session)
+
+
+class CourseAdminTests(TestCase):
+    def test_question_and_choice_inlines_are_attached_to_admins(self):
+        self.assertEqual(course_admin.QuestionInline.model, Question)
+        self.assertEqual(course_admin.ChoiceInline.model, Choice)
+        self.assertIn(course_admin.QuestionInline, course_admin.CourseAdmin.inlines)
+        self.assertIn(course_admin.ChoiceInline, course_admin.QuestionAdmin.inlines)
+
+    def test_required_models_are_registered(self):
+        for model in (Course, Lesson, Instructor, Learner, Question, Choice, Submission):
+            with self.subTest(model=model.__name__):
+                self.assertIn(model, admin.site._registry)
+
+    def test_lesson_admin_lists_lessons_by_course_and_order(self):
+        self.assertEqual(course_admin.LessonAdmin.list_display, ('course', 'title', 'order'))
+        self.assertEqual(course_admin.LessonAdmin.search_fields, ('title', 'course__title'))

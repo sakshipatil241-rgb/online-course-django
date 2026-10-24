@@ -1,6 +1,17 @@
 from django.contrib import admin
 
-from .models import Choice, Course, Enrollment, Instructor, Lesson, Question, Submission
+from .models import Course, Lesson, Instructor, Learner, Question, Choice, Submission
+from .models import Enrollment
+
+
+class QuestionInline(admin.TabularInline):
+    model = Question
+    extra = 1
+
+
+class ChoiceInline(admin.TabularInline):
+    model = Choice
+    extra = 2
 
 
 @admin.register(Instructor)
@@ -15,6 +26,7 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ('category', 'level', 'featured', 'published')
     prepopulated_fields = {'slug': ('title',)}
     search_fields = ('title', 'short_description')
+    inlines = (QuestionInline,)
 
 
 @admin.register(Lesson)
@@ -23,15 +35,16 @@ class LessonAdmin(admin.ModelAdmin):
     search_fields = ('title', 'course__title')
 
 
+@admin.register(Learner)
+class LearnerAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_at')
+    search_fields = ('user__username', 'user__first_name', 'user__last_name', 'user__email')
+
+
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
     list_display = ('user', 'course', 'enrolled_at', 'completed')
     list_filter = ('completed',)
-
-
-class ChoiceInline(admin.TabularInline):
-    model = Choice
-    extra = 2
 
 
 @admin.register(Question)

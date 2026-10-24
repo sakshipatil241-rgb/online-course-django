@@ -80,6 +80,15 @@ class Enrollment(models.Model):
         return f'{self.user} enrolled in {self.course}'
 
 
+class Learner(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='learner_profile')
+    bio = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.user.get_full_name() or self.user.get_username()
+
+
 class Question(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='questions')
     question_text = models.TextField()
