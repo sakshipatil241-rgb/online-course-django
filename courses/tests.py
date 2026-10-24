@@ -112,13 +112,16 @@ class ExamModelTests(TestCase):
 
 class MockExamTests(TestCase):
     def test_exam_urls_are_registered(self):
-        self.assertEqual(reverse('submit'), '/exam/submit/')
-        self.assertEqual(reverse('show_exam_result'), '/exam/result/')
+        self.assertEqual(reverse('submit', args=[7]), '/courses/7/submit/')
+        self.assertEqual(
+            reverse('show_exam_result', args=[7, 12]),
+            '/course/7/submission/12/result/',
+        )
         response = self.client.get(reverse('mock_exam'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Answer all 5 questions')
-        self.assertEqual(self.client.get(reverse('submit')).status_code, 302)
-        self.assertEqual(self.client.get(reverse('show_exam_result')).status_code, 302)
+        self.assertEqual(self.client.get(reverse('mock_submit')).status_code, 302)
+        self.assertEqual(self.client.get(reverse('mock_exam_result')).status_code, 302)
 
     def test_successful_submission_shows_score_and_all_answers(self):
         answers = {
@@ -126,7 +129,7 @@ class MockExamTests(TestCase):
             for question in EXAM_QUESTIONS
         }
 
-        response = self.client.post(reverse('submit'), answers, follow=True)
+        response = self.client.post(reverse('mock_submit'), answers, follow=True)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'courses/show_exam_result.html')
@@ -137,11 +140,78 @@ class MockExamTests(TestCase):
             self.assertContains(response, question['question'])
 
     def test_incomplete_exam_is_not_scored(self):
-        response = self.client.post(reverse('submit'), {}, follow=True)
+        response = self.client.post(reverse('mock_submit'), {}, follow=True)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'courses/mock_exam.html')
         self.assertNotIn('mock_exam_result', self.client.session)
+
+
+class CourseExamViewTests(TestCase):
+    def setUp(self):
+        instructor = Instructor.objects.create(name='Exam Instructor', title='Teacher')
+        self.course = Course.objects.create(
+            title='Route Exam Course',
+            slug='route-exam-course',
+            short_description='Exam course.',
+            description='Course for route tests.',
+            instructor=instructor,
+        )
+        self.user = get_user_model().objects.create_user(username='route_student', password='test-password')
+        self.enrollment = Enrollment.objects.create(user=self.user, course=self.course)
+        question = Question.objects.create(
+            course=self.course,
+            question_text='Select the correct answer.',
+            grade=3,
+        )
+        self.correct_choice = Choice.objects.create(
+            question=question,
+            choice_text='Correct',
+            is_correct=True,
+        )
+        Choice.objects.create(question=question, choice_text='Incorrect')
+        self.client.force_login(self.user)
+
+    def test_course_submit_route_creates_submission_and_redirects_to_result(self):
+        submit_url = reverse('submit', args=[self.course.pk])
+        response = self.client.post(submit_url, {
+            f'question_{self.correct_choice.question_id}': [self.correct_choice.pk],
+        })
+
+        submission = Submission.objects.get(enrollment=self.enrollment)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            reverse('show_exam_result', args=[self.course.pk, submission.pk]),
+        )
+        self.assertEqual(list(submission.choices.all()), [self.correct_choice])
+
+    def test_result_route_displays_score_and_rejects_other_users(self):
+        submission = Submission.objects.create(enrollment=self.enrollment)
+        submission.choices.add(self.correct_choice)
+
+        response = self.client.get(reverse('show_exam_result', args=[self.course.pk, submission.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '3 / 3')
+        self.assertContains(response, 'Select the correct answer.')
+        self.assertContains(response, 'Congratulations!')
+
+        other_user = get_user_model().objects.create_user(username='other_student', password='test-password')
+        self.client.force_login(other_user)
+        self.assertEqual(
+            self.client.get(reverse('show_exam_result', args=[self.course.pk, submission.pk])).status_code,
+            404,
+        )
+
+    def test_course_exam_page_requires_enrollment(self):
+        self.assertEqual(self.client.get(reverse('course_exam', args=[self.course.pk])).status_code, 200)
+
+        self.enrollment.delete()
+        response = self.client.get(reverse('course_exam', args=[self.course.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('course_detail', args=[self.course.slug]))
 
 
 class CourseAdminTests(TestCase):

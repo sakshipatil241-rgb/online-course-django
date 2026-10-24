@@ -47,6 +47,9 @@
                     <p class="text-secondary">{{ course.instructor.title }}</p>
                     <p class="card-text">{{ course.instructor.bio }}</p>
                     <a class="btn btn-primary w-100" href="{% url 'enroll_course' course.slug %}">Enroll now</a>
+                    {% if is_enrolled %}
+                        <a class="btn btn-outline-primary w-100 mt-2" href="{% url 'course_exam' course.pk %}">Take course exam</a>
+                    {% endif %}
                 </div>
             </div>
         </aside>

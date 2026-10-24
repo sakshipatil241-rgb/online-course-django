@@ -19,3 +19,15 @@ class MockExamForm(forms.Form):
                 widget=forms.RadioSelect,
                 required=True,
             )
+
+
+class CourseExamForm(forms.Form):
+    def __init__(self, *args, questions, **kwargs):
+        super().__init__(*args, **kwargs)
+        for question in questions:
+            self.fields[f'question_{question.pk}'] = forms.ModelMultipleChoiceField(
+                label=question.question_text,
+                queryset=question.choices.all(),
+                widget=forms.CheckboxSelectMultiple,
+                required=True,
+            )
