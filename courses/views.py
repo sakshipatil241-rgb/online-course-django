@@ -7,7 +7,10 @@ from .models import Course, Enrollment
 
 
 def mock_exam(request):
-    return render(request, 'courses/mock_exam.html', {'form': MockExamForm()})
+    return render(request, 'courses/mock_exam.html', {
+        'form': MockExamForm(),
+        'question_count': len(EXAM_QUESTIONS),
+    })
 
 
 def submit(request):
@@ -16,7 +19,10 @@ def submit(request):
 
     form = MockExamForm(request.POST)
     if not form.is_valid():
-        return render(request, 'courses/mock_exam.html', {'form': form})
+        return render(request, 'courses/mock_exam.html', {
+            'form': form,
+            'question_count': len(EXAM_QUESTIONS),
+        })
 
     results = []
     score = 0

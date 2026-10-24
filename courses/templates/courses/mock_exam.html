@@ -11,7 +11,7 @@
     <div class="mx-auto" style="max-width: 800px;">
         <p class="text-primary fw-semibold text-uppercase">SkillNest assessment</p>
         <h1 class="display-5 fw-bold">Django Mock Exam</h1>
-        <p class="lead text-secondary">Answer all {{ form|length }} questions, then submit to see your score and answer review.</p>
+        <p class="lead text-secondary">Answer all {{ question_count }} questions, then submit to see your score and answer review.</p>
 
         <form method="post" action="{% url 'submit' %}" class="card card-body shadow-sm">
             {% csrf_token %}

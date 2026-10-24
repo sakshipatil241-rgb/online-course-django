@@ -54,7 +54,9 @@ class MockExamTests(TestCase):
     def test_exam_urls_are_registered(self):
         self.assertEqual(reverse('submit'), '/exam/submit/')
         self.assertEqual(reverse('show_exam_result'), '/exam/result/')
-        self.assertEqual(self.client.get(reverse('mock_exam')).status_code, 200)
+        response = self.client.get(reverse('mock_exam'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Answer all 5 questions')
         self.assertEqual(self.client.get(reverse('submit')).status_code, 302)
         self.assertEqual(self.client.get(reverse('show_exam_result')).status_code, 302)
 
