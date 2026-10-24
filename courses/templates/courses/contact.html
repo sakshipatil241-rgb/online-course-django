@@ -1,0 +1,18 @@
+{% extends 'courses/base.html' %}
+
+{% block title %}Contact | SkillNest{% endblock %}
+
+{% block content %}
+<section class="section-header narrow">
+    <p class="eyebrow">Get in touch</p>
+    <h1>Have a question? We are here to help.</h1>
+</section>
+
+<section class="content-panel form-panel">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="button primary">Send message</button>
+    </form>
+</section>
+{% endblock %}

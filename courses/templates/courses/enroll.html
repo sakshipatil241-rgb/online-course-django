@@ -1,0 +1,25 @@
+{% extends 'courses/base.html' %}
+
+{% block title %}Enroll in {{ course.title }}{% endblock %}
+
+{% block content %}
+<section class="content-panel enroll-panel">
+    <p class="eyebrow">Enrollment</p>
+    <h1>{{ course.title }}</h1>
+    <p>{{ course.short_description }}</p>
+    <div class="meta-row big-gap">
+        <span>{{ course.level }}</span>
+        <span>{{ course.duration }}</span>
+        <span>${{ course.price }}</span>
+    </div>
+
+    {% if request.user.is_authenticated %}
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="button primary">Confirm enrollment</button>
+        </form>
+    {% else %}
+        <p>Please sign in with the admin account to enroll in this course.</p>
+    {% endif %}
+</section>
+{% endblock %}

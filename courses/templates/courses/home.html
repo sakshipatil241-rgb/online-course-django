@@ -1,0 +1,43 @@
+{% extends 'courses/base.html' %}
+
+{% block title %}SkillNest | Learn online{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-copy">
+        <p class="eyebrow">Career-focused learning</p>
+        <h1>Build practical digital skills with guided online courses.</h1>
+        <p>Learn from experienced instructors, sharpen your portfolio, and accelerate your next step with expert-led lessons.</p>
+        {% if featured %}
+            <a class="button primary" href="{{ featured.get_absolute_url }}">Explore featured course</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="section-header">
+    <div>
+        <p class="eyebrow">Featured programs</p>
+        <h2>Choose a course that fits your goals</h2>
+    </div>
+</section>
+
+<section class="course-grid">
+    {% for course in courses %}
+        <article class="course-card">
+            <span class="badge">{{ course.category }}</span>
+            <h3>{{ course.title }}</h3>
+            <p>{{ course.short_description }}</p>
+            <div class="meta-row">
+                <span>{{ course.level }}</span>
+                <span>{{ course.duration }}</span>
+            </div>
+            <div class="course-footer">
+                <strong>${{ course.price }}</strong>
+                <a href="{{ course.get_absolute_url }}">View details</a>
+            </div>
+        </article>
+    {% empty %}
+        <p>No courses are currently available.</p>
+    {% endfor %}
+</section>
+{% endblock %}

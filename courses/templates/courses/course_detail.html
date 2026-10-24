@@ -1,0 +1,50 @@
+{% extends 'courses/base.html' %}
+
+{% block title %}{{ course.title }} | SkillNest{% endblock %}
+
+{% block content %}
+<section class="course-hero">
+    <div>
+        <p class="eyebrow">{{ course.category }}</p>
+        <h1>{{ course.title }}</h1>
+        <p>{{ course.short_description }}</p>
+        <div class="meta-row big-gap">
+            <span>{{ course.level }}</span>
+            <span>{{ course.duration }}</span>
+            <span>${{ course.price }}</span>
+        </div>
+        <div class="button-row">
+            <a class="button primary" href="{% url 'enroll_course' course.slug %}">Enroll now</a>
+            <a class="button secondary" href="{% url 'home' %}">Back to courses</a>
+        </div>
+    </div>
+    <div class="instructor-card">
+        <h3>Instructor</h3>
+        <p><strong>{{ course.instructor.name }}</strong></p>
+        <p>{{ course.instructor.title }}</p>
+        <p>{{ course.instructor.bio }}</p>
+    </div>
+</section>
+
+<section class="content-panel">
+    <h2>About this course</h2>
+    <p>{{ course.description }}</p>
+</section>
+
+<section class="content-panel">
+    <h2>Course lessons</h2>
+    <ol class="lesson-list">
+        {% for lesson in lessons %}
+            <li>
+                <div>
+                    <strong>{{ lesson.order }}. {{ lesson.title }}</strong>
+                    <span>{{ lesson.duration }}</span>
+                </div>
+                <p>{{ lesson.content }}</p>
+            </li>
+        {% empty %}
+            <li>No lessons are available yet.</li>
+        {% endfor %}
+    </ol>
+</section>
+{% endblock %}
