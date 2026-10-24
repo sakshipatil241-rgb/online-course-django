@@ -1,5 +1,7 @@
 from django.test import TestCase
+from django.urls import reverse
 
+from .exam_data import EXAM_QUESTIONS
 from .models import Course, Instructor, Lesson
 
 
@@ -46,3 +48,35 @@ class CourseModelTests(TestCase):
         self.assertContains(response, 'Intro')
         self.assertContains(response, 'Next steps')
         self.assertContains(response, 'bootstrap@5.3.3')
+
+
+class MockExamTests(TestCase):
+    def test_exam_urls_are_registered(self):
+        self.assertEqual(reverse('submit'), '/exam/submit/')
+        self.assertEqual(reverse('show_exam_result'), '/exam/result/')
+        self.assertEqual(self.client.get(reverse('mock_exam')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('submit')).status_code, 302)
+        self.assertEqual(self.client.get(reverse('show_exam_result')).status_code, 302)
+
+    def test_successful_submission_shows_score_and_all_answers(self):
+        answers = {
+            question['id']: question['answer']
+            for question in EXAM_QUESTIONS
+        }
+
+        response = self.client.post(reverse('submit'), answers, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'courses/show_exam_result.html')
+        self.assertContains(response, 'Congratulations!')
+        self.assertContains(response, f'{len(EXAM_QUESTIONS)} / {len(EXAM_QUESTIONS)}')
+        self.assertContains(response, 'Exam results')
+        for question in EXAM_QUESTIONS:
+            self.assertContains(response, question['question'])
+
+    def test_incomplete_exam_is_not_scored(self):
+        response = self.client.post(reverse('submit'), {}, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'courses/mock_exam.html')
+        self.assertNotIn('mock_exam_result', self.client.session)

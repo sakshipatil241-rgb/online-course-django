@@ -1,8 +1,55 @@
 from django.contrib import messages
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import ContactForm
+from .exam_data import EXAM_QUESTIONS
+from .forms import ContactForm, MockExamForm
 from .models import Course, Enrollment
+
+
+def mock_exam(request):
+    return render(request, 'courses/mock_exam.html', {'form': MockExamForm()})
+
+
+def submit(request):
+    if request.method != 'POST':
+        return redirect('mock_exam')
+
+    form = MockExamForm(request.POST)
+    if not form.is_valid():
+        return render(request, 'courses/mock_exam.html', {'form': form})
+
+    results = []
+    score = 0
+    for question in EXAM_QUESTIONS:
+        selected = form.cleaned_data[question['id']]
+        correct = selected == question['answer']
+        score += int(correct)
+        results.append({
+            'question': question['question'],
+            'selected': question['options'][selected],
+            'correct_answer': question['options'][question['answer']],
+            'is_correct': correct,
+        })
+
+    request.session['mock_exam_result'] = {
+        'score': score,
+        'total': len(EXAM_QUESTIONS),
+        'answers': results,
+    }
+    return redirect('show_exam_result')
+
+
+def show_exam_result(request):
+    result = request.session.get('mock_exam_result')
+    if result is None:
+        messages.info(request, 'Take the mock exam to see your results.')
+        return redirect('mock_exam')
+
+    context = {
+        **result,
+        'passed': result['score'] >= (result['total'] * 0.6),
+    }
+    return render(request, 'courses/show_exam_result.html', context)
 
 
 def home(request):
