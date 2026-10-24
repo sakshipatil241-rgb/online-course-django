@@ -78,3 +78,45 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f'{self.user} enrolled in {self.course}'
+
+
+class Question(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    grade = models.IntegerField(default=1)
+
+    def __str__(self):
+        return self.question_text
+
+    def is_get_score(self):
+        return self.grade if self.choices.filter(is_correct=True).exists() else 0
+
+
+class Choice(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
+    choice_text = models.CharField(max_length=100)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.choice_text
+
+
+class Submission(models.Model):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name='submissions')
+    choices = models.ManyToManyField(Choice, related_name='submissions')
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.enrollment.user} - {self.enrollment.course}'
+
+    def get_score(self):
+        score = 0
+        questions = self.enrollment.course.questions.prefetch_related('choices')
+        for question in questions:
+            correct_choices = set(question.choices.filter(is_correct=True).values_list('pk', flat=True))
+            selected_choices = set(
+                self.choices.filter(question=question).values_list('pk', flat=True)
+            )
+            if correct_choices and selected_choices == correct_choices:
+                score += question.is_get_score()
+        return score

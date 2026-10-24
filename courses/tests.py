@@ -1,8 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
 from .exam_data import EXAM_QUESTIONS
-from .models import Course, Instructor, Lesson
+from .models import Choice, Course, Enrollment, Instructor, Lesson, Question, Submission
 
 
 class CourseModelTests(TestCase):
@@ -48,6 +49,58 @@ class CourseModelTests(TestCase):
         self.assertContains(response, 'Intro')
         self.assertContains(response, 'Next steps')
         self.assertContains(response, 'bootstrap@5.3.3')
+
+
+class ExamModelTests(TestCase):
+    def setUp(self):
+        instructor = Instructor.objects.create(name='Exam Instructor', title='Teacher')
+        self.course = Course.objects.create(
+            title='Exam Course',
+            slug='exam-course',
+            short_description='Exam course.',
+            description='Course for question and submission tests.',
+            instructor=instructor,
+        )
+        self.user = get_user_model().objects.create_user(username='exam_student', password='test-password')
+        self.enrollment = Enrollment.objects.create(user=self.user, course=self.course)
+        self.question = Question.objects.create(
+            course=self.course,
+            question_text='Which answer is correct?',
+            grade=3,
+        )
+        self.correct_choice = Choice.objects.create(
+            question=self.question,
+            choice_text='Correct answer',
+            is_correct=True,
+        )
+        self.incorrect_choice = Choice.objects.create(
+            question=self.question,
+            choice_text='Incorrect answer',
+        )
+
+    def test_question_returns_its_grade_when_it_has_a_correct_choice(self):
+        self.assertEqual(self.question.is_get_score(), 3)
+
+    def test_question_without_a_correct_choice_has_no_score(self):
+        self.correct_choice.delete()
+        self.assertEqual(self.question.is_get_score(), 0)
+
+    def test_submission_scores_exact_correct_answers(self):
+        submission = Submission.objects.create(enrollment=self.enrollment)
+        submission.choices.add(self.correct_choice)
+
+        self.assertEqual(submission.get_score(), 3)
+
+    def test_submission_does_not_score_incorrect_or_incomplete_answers(self):
+        submission = Submission.objects.create(enrollment=self.enrollment)
+        submission.choices.add(self.incorrect_choice)
+
+        self.assertEqual(submission.get_score(), 0)
+
+    def test_submission_string_representation(self):
+        submission = Submission.objects.create(enrollment=self.enrollment)
+
+        self.assertEqual(str(submission), 'exam_student - Exam Course')
 
 
 class MockExamTests(TestCase):
