@@ -29,3 +29,20 @@ class CourseModelTests(TestCase):
 
     def test_course_has_lesson(self):
         self.assertEqual(self.course.lessons.count(), 1)
+
+    def test_course_detail_displays_course_and_all_lessons(self):
+        Lesson.objects.create(
+            course=self.course,
+            title='Next steps',
+            order=2,
+            content='Build your first project.',
+        )
+
+        response = self.client.get(self.course.get_absolute_url())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'courses/course_details_bootstrap.html')
+        self.assertContains(response, 'Test Course')
+        self.assertContains(response, 'Intro')
+        self.assertContains(response, 'Next steps')
+        self.assertContains(response, 'bootstrap@5.3.3')

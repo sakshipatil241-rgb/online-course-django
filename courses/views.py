@@ -26,7 +26,7 @@ def contact(request):
 def course_detail(request, slug):
     course = get_object_or_404(Course, slug=slug, published=True)
     lessons = course.lessons.all()
-    return render(request, 'courses/course_detail.html', {'course': course, 'lessons': lessons})
+    return render(request, 'courses/course_details_bootstrap.html', {'course': course, 'lessons': lessons})
 
 
 def enroll_course(request, slug):
